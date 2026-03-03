@@ -24,7 +24,7 @@ export function LoginPage() {
       } else {
         await login(username, password, role);
       }
-      navigate(role === 'ADMIN' ? '/admin' : '/dashboard');
+      navigate(role === 'ADMIN' ? '/admin' : '/dashboard', { replace: true });
     } catch {
       // Error is handled by the store
     }

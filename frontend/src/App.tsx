@@ -12,14 +12,9 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { LearnersPage } from './pages/admin/LearnersPage';
 import { BatchManagement } from './pages/admin/BatchManagement';
 import { AnalyticsPage } from './pages/admin/AnalyticsPage';
-import { useEffect } from 'react';
 
 function App() {
-  const { isAuthenticated, user, checkAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+  const { isAuthenticated, user } = useAuthStore();
 
   return (
     <BrowserRouter>
