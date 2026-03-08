@@ -9,9 +9,9 @@ export class MockTestController {
   static async start(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const { certificationId, questionCount } = req.body;
+      const { certificationId, questionCount, mockName } = req.body;
 
-      const result = await mockTestService.startMockTest(userId, certificationId, questionCount || 30);
+      const result = await mockTestService.startMockTest(userId, certificationId, questionCount || 30, mockName);
       sendSuccess(res, result, 'Mock test started', 201);
     } catch (error) {
       next(error);

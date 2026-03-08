@@ -67,9 +67,12 @@ export class MockTestRepository {
     });
   }
 
-  async getUserMockTestScores(userId: string) {
+  async getUserMockTestScores(userId: string, certificationId?: string) {
+    const where: Record<string, unknown> = { userId, completedAt: { not: null } };
+    if (certificationId) where.certificationId = certificationId;
+
     return prisma.mockTest.findMany({
-      where: { userId, completedAt: { not: null } },
+      where,
       select: { totalScore: true, negativeMarks: true, completedAt: true, startedAt: true },
       orderBy: { completedAt: 'asc' },
     });
