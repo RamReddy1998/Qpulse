@@ -2,10 +2,11 @@ import api from './api';
 import { ApiResponse, PaginatedResponse, MockTestStart, MockTestResult, MockTestDetail } from '../types';
 
 export const mockTestService = {
-  async start(certificationId: string, questionCount = 30): Promise<MockTestStart> {
+  async start(certificationId: string, questionCount = 30, mockName?: string): Promise<MockTestStart> {
     const res = await api.post<ApiResponse<MockTestStart>>('/mock-tests/start', {
       certificationId,
       questionCount,
+      mockName,
     });
     return res.data.data;
   },
