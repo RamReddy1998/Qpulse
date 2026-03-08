@@ -14,6 +14,7 @@ export function LearnersPage() {
 
   useEffect(() => {
     loadLearners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const loadLearners = async () => {
@@ -48,27 +49,37 @@ export function LearnersPage() {
       ) : (
         <div className="card overflow-hidden p-0">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Username</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Username</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Learning Type</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Joined</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {learners.map((learner) => (
-                <tr key={learner.id} className="hover:bg-gray-50">
+                <tr key={learner.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary-700">
+                      <div className="h-8 w-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary-700 dark:text-primary-400">
                           {learner.username.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="font-medium text-gray-900">{learner.username}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{learner.username}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      learner.learningType === 'BATCH'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    }`}>
+                      {learner.learningType === 'BATCH' ? 'Batch Learner' : 'Self Learner'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {learner.createdAt ? new Date(learner.createdAt).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-right">

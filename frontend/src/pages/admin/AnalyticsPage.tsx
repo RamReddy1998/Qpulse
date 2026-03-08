@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
-import { LearnerAnalytics, User } from '../../types';
+import { LearnerAnalytics, User, Question } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { BarChart3, Clock, Target, BookOpen, AlertTriangle } from 'lucide-react';
+import { BarChart3, Clock, Target, BookOpen, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 export function AnalyticsPage() {
@@ -15,6 +15,9 @@ export function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<LearnerAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+  const [topicQuestions, setTopicQuestions] = useState<Record<string, Question[]>>({});
+  const [loadingTopicQs, setLoadingTopicQs] = useState<string | null>(null);
 
   useEffect(() => {
     adminService
@@ -49,6 +52,25 @@ export function AnalyticsPage() {
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
+  };
+
+  const handleToggleTopic = async (topic: string) => {
+    if (expandedTopic === topic) {
+      setExpandedTopic(null);
+      return;
+    }
+    setExpandedTopic(topic);
+    if (!topicQuestions[topic]) {
+      setLoadingTopicQs(topic);
+      try {
+        const qs = await adminService.getWeaknessQuestions(topic);
+        setTopicQuestions((prev) => ({ ...prev, [topic]: qs }));
+      } catch (err) {
+        console.error('Failed to load topic questions:', err);
+      } finally {
+        setLoadingTopicQs(null);
+      }
+    }
   };
 
   if (loading) return <LoadingSpinner message="Loading..." />;
@@ -134,24 +156,57 @@ export function AnalyticsPage() {
             </div>
           )}
 
-          {/* Weak Topics */}
+          {/* Weak Topics - Clickable with question display */}
           {analytics.weakTopics.length > 0 && (
             <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
                 Weakness Detection
               </h2>
               <div className="space-y-3">
                 {analytics.weakTopics.map((topic, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{topic.topic}</p>
-                      <p className="text-xs text-gray-500">{topic.count} questions affected</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-red-600">{topic.totalMistakes}</p>
-                      <p className="text-xs text-red-500">total mistakes</p>
-                    </div>
+                  <div key={i}>
+                    <button
+                      onClick={() => handleToggleTopic(topic.topic)}
+                      className={`w-full flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors ${
+                        expandedTopic === topic.topic ? 'rounded-b-none' : ''
+                      }`}
+                    >
+                      <div className="text-left">
+                        <p className="font-medium text-gray-900 dark:text-white">{topic.topic}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{topic.count} questions affected</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-red-600">{topic.totalMistakes}</p>
+                          <p className="text-xs text-red-500">total mistakes</p>
+                        </div>
+                        {expandedTopic === topic.topic ? (
+                          <ChevronUp className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
+                    </button>
+                    {expandedTopic === topic.topic && (
+                      <div className="border border-t-0 border-red-200 dark:border-red-800 rounded-b-lg p-3 space-y-2">
+                        {loadingTopicQs === topic.topic ? (
+                          <LoadingSpinner message="Loading questions..." />
+                        ) : topicQuestions[topic.topic]?.length ? (
+                          topicQuestions[topic.topic].map((q, qi) => (
+                            <div key={q.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded text-sm">
+                              <p className="text-gray-900 dark:text-white font-medium">{qi + 1}. {q.questionText}</p>
+                              <div className="flex gap-2 mt-1">
+                                <span className="text-xs text-gray-500">{q.difficulty}</span>
+                                <span className="text-xs text-gray-400">{q.topic}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-400 text-center py-2">No questions found for this topic</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
