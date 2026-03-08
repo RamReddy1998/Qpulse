@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { readinessService } from '../../services/readiness.service';
-import { ReadinessScore, ReadinessHistory, TopicAccuracy } from '../../types';
+import { certificationService } from '../../services/certification.service';
+import { ReadinessScore, ReadinessHistory, TopicAccuracy, Certification } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Target, TrendingUp, Brain, Clock, RefreshCw } from 'lucide-react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export function ReadinessPage() {
+  const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [selectedCertId, setSelectedCertId] = useState('');
   const [score, setScore] = useState<ReadinessScore | null>(null);
   const [history, setHistory] = useState<ReadinessHistory[]>([]);
   const [topicAccuracy, setTopicAccuracy] = useState<TopicAccuracy[]>([]);
@@ -13,20 +16,29 @@ export function ReadinessPage() {
   const [calculating, setCalculating] = useState(false);
 
   useEffect(() => {
+    certificationService.getAll().then((certs) => {
+      setCertifications(certs);
+    });
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!loading) loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCertId]);
 
   const loadData = async () => {
     try {
+      const certId = selectedCertId || undefined;
       const [hist, topics] = await Promise.all([
-        readinessService.getHistory(),
-        readinessService.getTopicAccuracy(),
+        readinessService.getHistory(certId),
+        readinessService.getTopicAccuracy(certId),
       ]);
       setHistory(hist);
       setTopicAccuracy(topics);
 
       if (hist.length > 0) {
-        // Reconstruct score from latest history
         setScore({
           finalScore: hist[0].score,
           status: hist[0].status,
@@ -35,6 +47,8 @@ export function ReadinessPage() {
           topicMastery: 0,
           timeEfficiency: 0,
         });
+      } else {
+        setScore(null);
       }
     } catch (err) {
       console.error('Failed to load readiness data:', err);
@@ -46,9 +60,10 @@ export function ReadinessPage() {
   const handleCalculate = async () => {
     setCalculating(true);
     try {
-      const newScore = await readinessService.calculate();
+      const certId = selectedCertId || undefined;
+      const newScore = await readinessService.calculate(certId);
       setScore(newScore);
-      const hist = await readinessService.getHistory();
+      const hist = await readinessService.getHistory(certId);
       setHistory(hist);
     } catch (err) {
       console.error('Failed to calculate readiness:', err);
@@ -75,17 +90,29 @@ export function ReadinessPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Readiness Score</h1>
-          <p className="text-gray-500 mt-1">Your exam preparation readiness assessment</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Readiness Score</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Your exam preparation readiness assessment</p>
         </div>
-        <button
-          onClick={handleCalculate}
-          disabled={calculating}
-          className="btn-primary flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${calculating ? 'animate-spin' : ''}`} />
-          {calculating ? 'Calculating...' : 'Calculate Score'}
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedCertId}
+            onChange={(e) => setSelectedCertId(e.target.value)}
+            className="input-field text-sm"
+          >
+            <option value="">All Certifications</option>
+            {certifications.map((cert) => (
+              <option key={cert.id} value={cert.id}>{cert.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleCalculate}
+            disabled={calculating}
+            className="btn-primary flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${calculating ? 'animate-spin' : ''}`} />
+            {calculating ? 'Calculating...' : 'Calculate Score'}
+          </button>
+        </div>
       </div>
 
       {/* Main Score */}
