@@ -15,16 +15,16 @@ export class ReadinessService {
     this.readinessRepo = new ReadinessRepository();
   }
 
-  async calculateReadiness(userId: string): Promise<ReadinessScoreData> {
+  async calculateReadiness(userId: string, certificationId?: string): Promise<ReadinessScoreData> {
     // 1. Average Score (from mock tests)
-    const mockScores = await this.mockTestRepo.getUserMockTestScores(userId);
+    const mockScores = await this.mockTestRepo.getUserMockTestScores(userId, certificationId);
     const avgScore = this.calculateAvgScore(mockScores);
 
     // 2. Trend Growth (improvement over recent tests)
     const trendGrowth = this.calculateTrendGrowth(mockScores);
 
     // 3. Topic Mastery (from activity logs)
-    const topicAccuracy = await this.activityRepo.getTopicAccuracy(userId);
+    const topicAccuracy = await this.activityRepo.getTopicAccuracy(userId, certificationId);
     const topicMastery = this.calculateTopicMastery(topicAccuracy);
 
     // 4. Time Efficiency
@@ -40,10 +40,11 @@ export class ReadinessService {
     const status = this.getStatus(clampedScore);
 
     // Persist
-    await this.readinessRepo.create(userId, clampedScore, status);
+    await this.readinessRepo.create(userId, clampedScore, status, certificationId);
 
     logger.info('Readiness score calculated', {
       userId,
+      certificationId,
       avgScore,
       trendGrowth,
       topicMastery,
@@ -62,12 +63,12 @@ export class ReadinessService {
     };
   }
 
-  async getLatest(userId: string) {
-    return this.readinessRepo.getLatest(userId);
+  async getLatest(userId: string, certificationId?: string) {
+    return this.readinessRepo.getLatest(userId, certificationId);
   }
 
-  async getHistory(userId: string) {
-    return this.readinessRepo.getHistory(userId);
+  async getHistory(userId: string, certificationId?: string) {
+    return this.readinessRepo.getHistory(userId, 20, certificationId);
   }
 
   private calculateAvgScore(
