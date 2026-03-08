@@ -1,9 +1,14 @@
 import prisma from '../config/prisma';
 
 export class BatchRepository {
-  async create(batchName: string, certificationId: string) {
+  async create(batchName: string, certificationId: string, startTime?: Date, endTime?: Date) {
     return prisma.batch.create({
-      data: { batchName, certificationId },
+      data: {
+        batchName,
+        certificationId,
+        startTime: startTime || null,
+        endTime: endTime || null,
+      },
       include: { certification: { select: { name: true } } },
     });
   }

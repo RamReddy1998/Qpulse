@@ -39,8 +39,8 @@ export class AdminController {
   // Batch management
   static async createBatch(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { batchName, certificationId } = req.body;
-      const batch = await adminService.createBatch(batchName, certificationId);
+      const { batchName, certificationId, startTime, endTime } = req.body;
+      const batch = await adminService.createBatch(batchName, certificationId, startTime, endTime);
       sendSuccess(res, batch, 'Batch created', 201);
     } catch (error) {
       next(error);
@@ -85,6 +85,40 @@ export class AdminController {
       const userId = req.params.userId as string;
       const result = await adminService.removeParticipant(batchId, userId);
       sendSuccess(res, result, 'Participant removed');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getBatchParticipantsAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const batchId = req.params.batchId as string;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const result = await adminService.getBatchParticipantsWithAnalytics(batchId, page, limit);
+      sendSuccess(res, result, 'Batch participants analytics retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getWeaknessQuestions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const topic = req.query.topic as string;
+      const certificationId = req.query.certificationId as string | undefined;
+      const questions = await adminService.getWeaknessQuestions(topic, certificationId);
+      sendSuccess(res, questions, 'Weakness questions retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async uploadQuestions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const certificationId = req.params.certificationId as string;
+      const { questions } = req.body;
+      const result = await adminService.uploadQuestions(certificationId, questions);
+      sendSuccess(res, result, 'Questions uploaded');
     } catch (error) {
       next(error);
     }
