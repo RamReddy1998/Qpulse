@@ -4,6 +4,7 @@ export interface User {
   id: string;
   username: string;
   role: Role;
+  learningType?: 'BATCH' | 'SELF';
   createdAt?: string;
 }
 
@@ -11,6 +12,7 @@ export interface Certification {
   id: string;
   name: string;
   description: string;
+  examDate?: string | null;
   _count: { questions: number };
 }
 
@@ -90,6 +92,7 @@ export interface ReadinessHistory {
   score: number;
   status: string;
   calculatedAt: string;
+  certification?: { name: string } | null;
 }
 
 export interface TopicAccuracy {
@@ -105,7 +108,10 @@ export interface MistakeLog {
   mistakeCount: number;
   lastAttemptedAt: string;
   question: {
+    id: string;
     questionText: string;
+    options: QuestionOption;
+    correctAnswer: string;
     topic: string;
     difficulty: string;
     certification: { name: string };
@@ -117,6 +123,8 @@ export interface AdminDashboard {
   activeLearners: number;
   avgReadiness: number;
   totalMocks: number;
+  currentMonthCerts?: Array<{ id: string; name: string; examDate: string | null; questionCount: number }>;
+  nextMonthCerts?: Array<{ id: string; name: string; examDate: string | null; questionCount: number }>;
 }
 
 export interface LearnerAnalytics {
@@ -134,10 +142,34 @@ export interface Batch {
   id: string;
   batchName: string;
   certificationId: string;
+  startTime?: string | null;
+  endTime?: string | null;
   createdAt: string;
   certification: { name: string };
   _count?: { participants: number };
   participants?: Array<{ id: string; user: { id: string; username: string } }>;
+}
+
+export interface AiHint {
+  hints: string[];
+  tips: string[];
+  solvingStrategy: string;
+}
+
+export interface BatchParticipantAnalytics {
+  id: string;
+  userId: string;
+  username: string;
+  certification: string;
+  scoreRange: string;
+  activityStatus: 'Active' | 'Inactive';
+}
+
+export interface UploadResult {
+  total: number;
+  successful: number;
+  failed: number;
+  failures: Array<{ index: number; reason: string }>;
 }
 
 export interface ApiResponse<T> {
