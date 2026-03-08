@@ -21,6 +21,37 @@ export class PracticeController {
     }
   }
 
+  static async getFilteredQuestions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const certificationId = req.params.certificationId as string;
+      const topic = req.query.topic as string | undefined;
+      const difficulty = req.query.difficulty as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const questions = await practiceService.getFilteredQuestions(certificationId, {
+        topic,
+        difficulty,
+        limit,
+      });
+      sendSuccess(res, questions, 'Filtered questions retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getFilterCount(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const certificationId = req.params.certificationId as string;
+      const topic = req.query.topic as string | undefined;
+      const difficulty = req.query.difficulty as string | undefined;
+
+      const count = await practiceService.getFilterCount(certificationId, { topic, difficulty });
+      sendSuccess(res, { count }, 'Filter count retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async submitAnswer(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
@@ -45,11 +76,41 @@ export class PracticeController {
     }
   }
 
+  static async getHint(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const questionId = req.params.questionId as string;
+      const hint = await practiceService.getHint(questionId);
+      sendSuccess(res, hint, 'Hint retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getQuestionById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const questionId = req.params.questionId as string;
+      const question = await practiceService.getQuestionById(questionId);
+      sendSuccess(res, question, 'Question retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getTopics(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const certificationId = req.params.certificationId as string;
       const topics = await practiceService.getTopics(certificationId);
       sendSuccess(res, topics, 'Topics retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getDifficulties(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const certificationId = req.params.certificationId as string;
+      const difficulties = await practiceService.getDifficulties(certificationId);
+      sendSuccess(res, difficulties, 'Difficulties retrieved');
     } catch (error) {
       next(error);
     }
