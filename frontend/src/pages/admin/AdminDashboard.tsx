@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { adminService } from '../../services/admin.service';
 import { AdminDashboard as AdminDashboardType } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { Users, UserCheck, Target, FileCheck, Calendar, BookOpen } from 'lucide-react';
+import { Users, UserCheck, Target, FileCheck, Calendar, BookOpen, Layers } from 'lucide-react';
 
 export function AdminDashboard() {
   const [dashboard, setDashboard] = useState<AdminDashboardType | null>(null);
@@ -52,8 +52,8 @@ export function AdminDashboard() {
 
         <div className="card">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-              <Target className="h-6 w-6 text-orange-600" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#ff5f2d20' }}>
+              <Target className="h-6 w-6" style={{ color: '#ff5f2d' }} />
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Avg Readiness</p>
@@ -75,12 +75,44 @@ export function AdminDashboard() {
         </div>
       </div>
 
+      {/* Today's Batches */}
+      <div className="card mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Layers className="h-5 w-5" style={{ color: '#ff5f2d' }} />
+          Today&apos;s Batches
+        </h2>
+        {dashboard?.todayBatches && dashboard.todayBatches.length > 0 ? (
+          <div className="space-y-3">
+            {dashboard.todayBatches.map((batch) => (
+              <div
+                key={batch.id}
+                className="flex items-center justify-between p-3 rounded-lg border"
+                style={{ backgroundColor: '#ff5f2d10', borderColor: '#ff5f2d40' }}
+              >
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">{batch.batchName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {batch.certificationName} &bull; Created {new Date(batch.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" style={{ color: '#ff5f2d' }} />
+                  <span className="text-sm font-medium" style={{ color: '#ff5f2d' }}>{batch.participantCount} participants</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">No batches created today</p>
+        )}
+      </div>
+
       {/* Certification Sections by Month */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Current Month */}
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary-600" />
+            <Calendar className="h-5 w-5" style={{ color: '#ff5f2d' }} />
             Current Month Certifications
           </h2>
           {dashboard?.currentMonthCerts && dashboard.currentMonthCerts.length > 0 ? (

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
 import { LearnerAnalytics, User, Question } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { BarChart3, Clock, Target, BookOpen, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, Clock, Target, BookOpen, AlertTriangle, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 export function AnalyticsPage() {
@@ -78,8 +78,8 @@ export function AnalyticsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Learner Analytics</h1>
-        <p className="text-gray-500 mt-1">Detailed performance analytics per learner</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Learner Analytics</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Detailed performance analytics per learner</p>
       </div>
 
       {/* Learner selector */}
@@ -100,14 +100,44 @@ export function AnalyticsPage() {
         <LoadingSpinner message="Loading analytics..." />
       ) : analytics ? (
         <div>
+          {/* Learner context: batch + certification */}
+          <div className="card mb-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ff5f2d20' }}>
+                  <span className="text-sm font-bold" style={{ color: '#ff5f2d' }}>
+                    {analytics.username.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white">{analytics.username}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {analytics.learningType === 'BATCH' ? 'Batch Learner' : 'Self Learner'}
+                  </p>
+                </div>
+              </div>
+              {analytics.batches && analytics.batches.length > 0 && (
+                <div className="flex flex-wrap gap-2 ml-4">
+                  {analytics.batches.map((b) => (
+                    <div key={b.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border" style={{ borderColor: '#ff5f2d40', backgroundColor: '#ff5f2d08' }}>
+                      <Layers className="h-3.5 w-3.5" style={{ color: '#ff5f2d' }} />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{b.batchName}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">({b.certificationName})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="card">
               <div className="flex items-center gap-3">
                 <Clock className="h-8 w-8 text-blue-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Total Time</p>
-                  <p className="text-xl font-bold text-gray-900">{formatTime(analytics.totalTimeSec)}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Time</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{formatTime(analytics.totalTimeSec)}</p>
                 </div>
               </div>
             </div>
@@ -115,8 +145,8 @@ export function AnalyticsPage() {
               <div className="flex items-center gap-3">
                 <BookOpen className="h-8 w-8 text-purple-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Total Attempts</p>
-                  <p className="text-xl font-bold text-gray-900">{analytics.totalAttempts}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Attempts</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{analytics.totalAttempts}</p>
                 </div>
               </div>
             </div>
@@ -124,8 +154,8 @@ export function AnalyticsPage() {
               <div className="flex items-center gap-3">
                 <BarChart3 className="h-8 w-8 text-green-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Mock Tests</p>
-                  <p className="text-xl font-bold text-gray-900">{analytics.mockTestCount}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mock Tests</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{analytics.mockTestCount}</p>
                 </div>
               </div>
             </div>
@@ -133,8 +163,8 @@ export function AnalyticsPage() {
               <div className="flex items-center gap-3">
                 <Target className="h-8 w-8 text-orange-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Readiness</p>
-                  <p className="text-xl font-bold text-gray-900">{analytics.readinessScore}%</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Readiness</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{analytics.readinessScore}%</p>
                 </div>
               </div>
             </div>
@@ -143,7 +173,7 @@ export function AnalyticsPage() {
           {/* Topic Accuracy Chart */}
           {analytics.topicAccuracy.length > 0 && (
             <div className="card mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Topic Engagement & Accuracy</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Topic Engagement & Accuracy</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.topicAccuracy.slice(0, 12)} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" />

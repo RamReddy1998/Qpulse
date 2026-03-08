@@ -20,7 +20,20 @@ export class UserRepository {
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where: { role: 'LEARNER' },
-        select: { id: true, username: true, role: true, learningType: true, createdAt: true },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          learningType: true,
+          createdAt: true,
+          batchParticipants: {
+            include: {
+              batch: {
+                select: { id: true, batchName: true, certification: { select: { name: true } } },
+              },
+            },
+          },
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },

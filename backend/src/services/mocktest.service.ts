@@ -36,7 +36,7 @@ export class MockTestService {
 
     return {
       mockTestId: mockTest.id,
-      mockName,
+      mockName: name,
       questions: questions.map((q) => ({
         id: q.id,
         questionText: q.questionText,

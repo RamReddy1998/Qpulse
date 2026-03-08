@@ -409,39 +409,44 @@ export function SmartPractice() {
                     <button onClick={handleSubmit} disabled={!selectedAnswer} className="btn-primary flex-1">
                       Submit Answer
                     </button>
-                    <button
-                      onClick={handleGetHint}
-                      disabled={loadingHint}
-                      className="btn-secondary flex items-center justify-center gap-2"
-                      title="Get hints without revealing the answer"
-                    >
-                      <HelpCircle className="h-4 w-4" />
-                      {loadingHint ? 'Loading...' : 'Hint'}
-                    </button>
                   </>
                 ) : (
-                  <>
-                    <button onClick={handleGetExplanation} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                      <Brain className="h-4 w-4" /> AI Explanation
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={() => navigateQuestion(currentIdx - 1)}
+                      disabled={currentIdx === 0}
+                      className="btn-secondary flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="h-4 w-4" /> Previous
                     </button>
                     {currentIdx < questions.length - 1 && (
                       <button onClick={() => navigateQuestion(currentIdx + 1)} className="btn-secondary flex items-center gap-2">
                         Next <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
 
-              {/* Previous / Next */}
-              <div className="flex justify-between mt-4">
-                <button onClick={() => navigateQuestion(currentIdx - 1)} disabled={currentIdx === 0} className="btn-secondary text-sm flex items-center gap-1">
-                  <ChevronLeft className="h-4 w-4" /> Previous
-                </button>
-                <button onClick={() => navigateQuestion(currentIdx + 1)} disabled={currentIdx >= questions.length - 1} className="btn-secondary text-sm flex items-center gap-1">
-                  Next <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+              {/* Previous / Next - only shown when NOT submitted */}
+              {!submitted && (
+                <div className="flex justify-between mt-4">
+                  <button
+                    onClick={() => navigateQuestion(currentIdx - 1)}
+                    disabled={currentIdx === 0}
+                    className="btn-secondary text-sm flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Previous
+                  </button>
+                  <button
+                    onClick={() => navigateQuestion(currentIdx + 1)}
+                    disabled={currentIdx >= questions.length - 1}
+                    className="btn-secondary text-sm flex items-center gap-1"
+                  >
+                    Next <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
 
               {/* Result banner */}
               {submitted && (
@@ -468,16 +473,36 @@ export function SmartPractice() {
 
         {/* Right: AI Explanation / Hints */}
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {submitted ? 'AI Explanation' : 'AI Assistant'}
-            </h2>
-            {submitted && (
-              <span className={`ml-auto flex items-center gap-1 text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                {isCorrect ? 'Correct' : 'Wrong'}
-              </span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {submitted ? 'AI Explanation' : 'AI Assistant'}
+              </h2>
+              {submitted && (
+                <span className={`ml-2 flex items-center gap-1 text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                  {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                  {isCorrect ? 'Correct' : 'Wrong'}
+                </span>
+              )}
+            </div>
+            {/* AI Explanation button in the right panel */}
+            {submitted && !explanation && !loadingExplanation && (
+              <button
+                onClick={handleGetExplanation}
+                className="btn-primary text-sm flex items-center gap-2"
+              >
+                <Brain className="h-4 w-4" /> Get Explanation
+              </button>
+            )}
+            {!submitted && !hint && !loadingHint && question && (
+              <button
+                onClick={handleGetHint}
+                disabled={loadingHint}
+                className="btn-secondary text-sm flex items-center gap-2"
+              >
+                <HelpCircle className="h-4 w-4" /> Get Hint
+              </button>
             )}
           </div>
 
@@ -547,8 +572,8 @@ export function SmartPractice() {
               <Brain className="h-16 w-16 mx-auto mb-4 text-gray-200 dark:text-gray-600" />
               <p className="text-sm">
                 {submitted
-                  ? 'Click "AI Explanation" to get detailed analysis'
-                  : 'Click "Hint" for solving tips, or submit your answer for full AI explanation'}
+                  ? 'Click "Get Explanation" above for detailed AI analysis'
+                  : 'Click "Get Hint" above for solving tips, or submit your answer for full AI explanation'}
               </p>
             </div>
           )}

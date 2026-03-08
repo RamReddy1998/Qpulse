@@ -53,6 +53,18 @@ export class BatchRepository {
     });
   }
 
+  async findBatchesByUser(userId: string) {
+    const participations = await prisma.batchParticipant.findMany({
+      where: { userId },
+      include: {
+        batch: {
+          include: { certification: { select: { name: true } } },
+        },
+      },
+    });
+    return participations.map((p) => p.batch);
+  }
+
   async isParticipant(batchId: string, userId: string) {
     const participant = await prisma.batchParticipant.findUnique({
       where: { batchId_userId: { batchId, userId } },

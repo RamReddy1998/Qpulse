@@ -46,7 +46,7 @@ export class PracticeController {
       const difficulty = req.query.difficulty as string | undefined;
 
       const count = await practiceService.getFilterCount(certificationId, { topic, difficulty });
-      sendSuccess(res, { count }, 'Filter count retrieved');
+      sendSuccess(res, count, 'Filter count retrieved');
     } catch (error) {
       next(error);
     }

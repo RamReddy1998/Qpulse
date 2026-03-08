@@ -31,12 +31,13 @@ export class AdminService {
   }
 
   async getDashboard() {
-    const [totalLearners, activeLearners, avgReadiness, totalMocks, certifications] = await Promise.all([
+    const [totalLearners, activeLearners, avgReadiness, totalMocks, certifications, recentBatches] = await Promise.all([
       this.userRepo.countByRole('LEARNER'),
       this.activityRepo.getActiveLearnerCount(7),
       this.readinessRepo.getAverageScore(),
       this.mockTestRepo.countAll(),
       this.certRepo.findAll(),
+      this.batchRepo.findAll(1, 50),
     ]);
 
     // Separate certifications by current month and next month
@@ -58,6 +59,17 @@ export class AdminService {
       return d.getMonth() === nextMonth && d.getFullYear() === nextMonthYear;
     });
 
+    // Filter batches for current month and today
+    const todayBatches = recentBatches.batches.filter((b) => {
+      const created = new Date(b.createdAt);
+      return created.toDateString() === now.toDateString();
+    });
+
+    const currentMonthBatches = recentBatches.batches.filter((b) => {
+      const created = new Date(b.createdAt);
+      return created.getMonth() === currentMonth && created.getFullYear() === currentYear;
+    });
+
     return {
       totalLearners,
       activeLearners,
@@ -75,6 +87,24 @@ export class AdminService {
         examDate: c.examDate,
         questionCount: c._count.questions,
       })),
+      todayBatches: todayBatches.map((b) => ({
+        id: b.id,
+        batchName: b.batchName,
+        certificationName: b.certification.name,
+        participantCount: b._count?.participants || 0,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        createdAt: b.createdAt,
+      })),
+      currentMonthBatches: currentMonthBatches.map((b) => ({
+        id: b.id,
+        batchName: b.batchName,
+        certificationName: b.certification.name,
+        participantCount: b._count?.participants || 0,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        createdAt: b.createdAt,
+      })),
     };
   }
 
@@ -88,16 +118,18 @@ export class AdminService {
       throw new NotFoundError('Learner not found');
     }
 
-    const [timeStats, topicAccuracy, topMistakes, mockTestCount, latestReadiness] = await Promise.all([
+    const [timeStats, topicAccuracy, topMistakes, mockTestCount, latestReadiness, userBatches] = await Promise.all([
       this.activityRepo.getTotalTimeSpent(userId),
       this.activityRepo.getTopicAccuracy(userId),
       this.mistakeRepo.getTopMistakeTopics(userId),
       this.mockTestRepo.countByUser(userId),
       this.readinessRepo.getLatest(userId),
+      this.batchRepo.findBatchesByUser(userId),
     ]);
 
     return {
       username: user.username,
+      learningType: user.learningType || 'SELF',
       totalTimeSec: timeStats.totalTimeSec,
       totalAttempts: timeStats.totalAttempts,
       mockTestCount,
@@ -105,6 +137,11 @@ export class AdminService {
       readinessStatus: latestReadiness?.status || 'not_ready',
       topicAccuracy,
       weakTopics: topMistakes,
+      batches: userBatches.map((b) => ({
+        id: b.id,
+        batchName: b.batchName,
+        certificationName: b.certification.name,
+      })),
     };
   }
 
@@ -211,6 +248,13 @@ export class AdminService {
 
   async removeParticipant(batchId: string, userId: string) {
     await this.batchRepo.removeParticipant(batchId, userId);
+
+    // Check if user is still in any other batch
+    const otherBatches = await this.batchRepo.findBatchesByUser(userId);
+    if (otherBatches.length === 0) {
+      await this.userRepo.updateLearningType(userId, 'SELF');
+    }
+
     return { message: 'Participant removed from batch' };
   }
 

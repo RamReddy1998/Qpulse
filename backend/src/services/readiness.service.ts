@@ -39,8 +39,19 @@ export class ReadinessService {
     const clampedScore = Math.max(0, Math.min(100, finalScore));
     const status = this.getStatus(clampedScore);
 
-    // Persist
-    await this.readinessRepo.create(userId, clampedScore, status, certificationId);
+    // Persist (avoid creating duplicate entries for the same day)
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const latest = await this.readinessRepo.getLatest(userId, certificationId);
+
+    if (latest && latest.calculatedAt.toISOString().slice(0, 10) === todayKey) {
+      logger.info('Readiness already calculated today - skipping duplicate persist', {
+        userId,
+        certificationId,
+        latestId: latest.id,
+      });
+    } else {
+      await this.readinessRepo.create(userId, clampedScore, status, certificationId);
+    }
 
     logger.info('Readiness score calculated', {
       userId,

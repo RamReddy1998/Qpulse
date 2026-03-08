@@ -15,7 +15,9 @@ interface AnswerMap {
 interface ResultQuestion {
   question: Question;
   userAnswer: string;
+  userAnswerText: string;
   correctAnswer: string;
+  correctAnswerText: string;
   isCorrect: boolean;
   status: 'correct' | 'wrong' | 'unattempted';
 }
@@ -26,6 +28,7 @@ export function MockTestPage() {
   const [selectedCertId, setSelectedCertId] = useState('');
   const [questionCount, setQuestionCount] = useState(30);
   const [mockName, setMockName] = useState('');
+  const [mockNameError, setMockNameError] = useState('');
   const [mockTestId, setMockTestId] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -71,9 +74,15 @@ export function MockTestPage() {
   }, [testState]);
 
   const handleStartTest = async () => {
+    // Validate mock name
+    if (!mockName.trim()) {
+      setMockNameError('Please enter a name for this mock test');
+      return;
+    }
+    setMockNameError('');
     setLoading(true);
     try {
-      const testName = mockName.trim() || `Mock Test ${new Date().toLocaleDateString()}`;
+      const testName = mockName.trim();
       const test = await mockTestService.start(selectedCertId, questionCount, testName);
       setMockTestId(test.mockTestId);
       setQuestions(test.questions);
@@ -113,6 +122,46 @@ export function MockTestPage() {
     try {
       const res = await mockTestService.submit(mockTestId, formattedAnswers);
       setResult(res);
+
+      // Load full results (includes correct answers + topic) for the grid
+      try {
+        const detail = await mockTestService.getResult(mockTestId);
+        const questionMetaById = new Map(questions.map((q) => [q.id, q]));
+
+        const rqs: ResultQuestion[] = detail.attempts.map((a) => {
+          const meta = questionMetaById.get(a.questionId);
+          const opts = a.options as unknown as Record<string, string>;
+          const userAns = a.userAnswer || '';
+          const correct = a.correctAnswer || '';
+
+          const status: 'correct' | 'wrong' | 'unattempted' =
+            userAns === '' ? 'unattempted' : a.isCorrect ? 'correct' : 'wrong';
+
+          return {
+            question: {
+              id: a.questionId,
+              questionText: a.questionText,
+              options: a.options,
+              difficulty: meta?.difficulty || 'unknown',
+              topic: a.topic || meta?.topic || 'unknown',
+              certificationId: selectedCertId,
+            },
+            userAnswer: userAns,
+            userAnswerText: userAns ? `${userAns}: ${opts[userAns] || ''}` : '',
+            correctAnswer: correct,
+            correctAnswerText: correct ? `${correct}: ${opts[correct] || ''}` : '',
+            isCorrect: userAns !== '' && a.isCorrect,
+            status,
+          };
+        });
+
+        setResultQuestions(rqs);
+      } catch (e) {
+        console.error('Failed to load detailed mock test results:', e);
+        setResultQuestions([]);
+      }
+
+      setResultTab('all');
       setTestState('result');
     } catch (err) {
       console.error('Failed to submit test:', err);
@@ -139,8 +188,8 @@ export function MockTestPage() {
       <div>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mock Tests</h1>
-            <p className="text-gray-500 mt-1">Simulate real exam conditions</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mock Tests</h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">Simulate real exam conditions</p>
           </div>
           <button onClick={() => setTestState('history')} className="btn-secondary">
             View History
@@ -155,10 +204,10 @@ export function MockTestPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-600">
+                  <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600">
                     {cert.name}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">{cert._count.questions} questions available</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{cert._count.questions} questions available</p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -180,14 +229,19 @@ export function MockTestPage() {
         <p className="text-gray-500 dark:text-gray-400 mb-6">{cert?.name}</p>
         <div className="card">
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mock Test Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Mock Test Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               value={mockName}
-              onChange={(e) => setMockName(e.target.value)}
-              placeholder={`Mock Test ${new Date().toLocaleDateString()}`}
-              className="input-field"
+              onChange={(e) => { setMockName(e.target.value); setMockNameError(''); }}
+              placeholder="Enter a name for this mock test"
+              className={`input-field ${mockNameError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
             />
+            {mockNameError && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{mockNameError}</p>
+            )}
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Questions</label>
@@ -227,10 +281,10 @@ export function MockTestPage() {
     return (
       <div>
         {/* Timer bar */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 -mx-8 -mt-8 px-8 py-3 mb-6">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 -mx-8 -mt-8 px-8 py-3 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Question {currentIdx + 1}/{questions.length}
               </span>
               <div className="flex gap-1">
@@ -242,8 +296,8 @@ export function MockTestPage() {
                       i === currentIdx
                         ? 'bg-primary-600 text-white'
                         : answers[questions[i].id]
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                     }`}
                   >
                     {i + 1}
@@ -253,7 +307,7 @@ export function MockTestPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-sm font-bold ${
-                timeLeft < 300 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                timeLeft < 300 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               }`}>
                 <Clock className="h-4 w-4" />
                 {formatTime(timeLeft)}
@@ -275,10 +329,10 @@ export function MockTestPage() {
           <div className="card max-w-3xl mx-auto">
             <div className="flex items-center gap-2 mb-4">
               <span className="badge-info">{currentQ.topic}</span>
-              <span className="badge">{currentQ.difficulty}</span>
+              <span className="badge bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{currentQ.difficulty}</span>
             </div>
 
-            <p className="text-gray-900 font-medium mb-6 leading-relaxed whitespace-pre-line">
+            <p className="text-gray-900 dark:text-white font-medium mb-6 leading-relaxed whitespace-pre-line">
               {currentQ.questionText}
             </p>
 
@@ -289,19 +343,19 @@ export function MockTestPage() {
                   onClick={() => handleSelectAnswer(key)}
                   className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                     currentAnswer === key
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-primary-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-500'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <span className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
                       currentAnswer === key
                         ? 'bg-primary-500 text-white border-primary-500'
-                        : 'border-gray-300 text-gray-500'
+                        : 'border-gray-300 dark:border-gray-500 text-gray-500 dark:text-gray-400'
                     }`}>
                       {key}
                     </span>
-                    <span className="text-sm text-gray-700">{value}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>
                   </div>
                 </button>
               ))}
@@ -312,7 +366,7 @@ export function MockTestPage() {
               <button
                 onClick={() => { questionStartRef.current = Date.now(); setCurrentIdx(Math.max(0, currentIdx - 1)); }}
                 disabled={currentIdx === 0}
-                className="btn-secondary flex items-center gap-2"
+                className="btn-secondary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="h-4 w-4" /> Previous
               </button>
@@ -335,26 +389,11 @@ export function MockTestPage() {
     );
   }
 
-  // Build result questions for the split-screen view
-  const buildResultQuestions = (): ResultQuestion[] => {
-    return questions.map((q) => {
-      const userAns = answers[q.id]?.answer || '';
-      const correct = (q as Question & { correctAnswer?: string }).correctAnswer || '';
-      const isRight = userAns !== '' && userAns === correct;
-      const status: 'correct' | 'wrong' | 'unattempted' = userAns === '' ? 'unattempted' : isRight ? 'correct' : 'wrong';
-      return { question: q, userAnswer: userAns, correctAnswer: correct, isCorrect: isRight, status };
-    });
-  };
 
   const filteredResultQuestions = resultQuestions.filter((rq) => resultTab === 'all' || rq.status === resultTab);
 
   // Result - split screen layout
   if (testState === 'result' && result) {
-    if (resultQuestions.length === 0) {
-      const rqs = buildResultQuestions();
-      setResultQuestions(rqs);
-    }
-
     return (
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Mock Test Results</h1>
@@ -450,16 +489,21 @@ export function MockTestPage() {
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-900 dark:text-white font-medium line-clamp-2">{rq.question.questionText}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs">
-                        <span className="text-gray-500">{rq.question.topic}</span>
-                        {rq.userAnswer && (
-                          <span className={rq.isCorrect ? 'text-green-600' : 'text-red-600'}>
-                            Your answer: {rq.userAnswer}
-                          </span>
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="badge-info">{rq.question.topic}</span>
+                          <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{rq.question.difficulty}</span>
+                        </div>
+                        {rq.userAnswer ? (
+                          <p className={`text-sm ${rq.isCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                            <span className="font-medium">Your Answer:</span> {rq.userAnswerText}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-400 dark:text-gray-500 italic">Not attempted</p>
                         )}
-                        {rq.correctAnswer && (
-                          <span className="text-green-600">Correct: {rq.correctAnswer}</span>
-                        )}
+                        <p className="text-sm text-green-700 dark:text-green-400">
+                          <span className="font-medium">Correct Answer:</span> {rq.correctAnswerText}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -480,22 +524,22 @@ export function MockTestPage() {
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Test History</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Test History</h1>
           <button onClick={() => setTestState('select')} className="btn-secondary">Back</button>
         </div>
         {history.length === 0 ? (
-          <div className="card text-center py-12 text-gray-500">No mock tests taken yet.</div>
+          <div className="card text-center py-12 text-gray-500 dark:text-gray-400">No mock tests taken yet.</div>
         ) : (
           <div className="space-y-3">
             {history.map((test) => (
               <div key={test.id} className="card flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-900">{test.mockName}</h3>
-                  <p className="text-sm text-gray-500">{test.certification?.name}</p>
+                  <h3 className="font-medium text-gray-900 dark:text-white">{test.mockName}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{test.certification?.name}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-primary-700">{test.totalScore.toFixed(1)}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-lg font-bold text-primary-700 dark:text-primary-400">{test.totalScore.toFixed(1)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {test.completedAt ? new Date(test.completedAt).toLocaleDateString() : 'In progress'}
                   </p>
                 </div>

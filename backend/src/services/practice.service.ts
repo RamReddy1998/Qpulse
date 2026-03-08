@@ -123,12 +123,41 @@ export class PracticeService {
       throw new NotFoundError('Question not found');
     }
 
+    const toList = (text: string): string[] => {
+      const parts = text
+        .split(/\r?\n|•|\u2022/) // split on newlines/bullets
+        .map((p) => p.replace(/^\s*[-*]\s*/, '').trim())
+        .filter(Boolean);
+
+      return parts.length > 0 ? parts : [text.trim()];
+    };
+
     // Check cache first
     const cacheKey = 'hint';
     const cached = await this.aiCacheRepo.findByQuestionAndType(questionId, cacheKey);
     if (cached) {
       logger.debug('Returning cached AI hint', { questionId });
-      return cached.response;
+
+      const resp = cached.response as unknown as Record<string, unknown>;
+      const hints = resp.hints;
+      const tips = resp.tips;
+
+      // Support legacy cached structure: { hints: string, tips: string, strategy: string }
+      const normalized = {
+        hints: Array.isArray(hints)
+          ? (hints as string[])
+          : typeof hints === 'string'
+            ? toList(hints)
+            : toList('Think about the core concept behind this question.'),
+        tips: Array.isArray(tips)
+          ? (tips as string[])
+          : typeof tips === 'string'
+            ? toList(tips)
+            : toList('Focus on what the question is really asking.'),
+        solvingStrategy: String(resp.solvingStrategy || resp.strategy || 'Eliminate obviously wrong options first.').trim(),
+      };
+
+      return normalized;
     }
 
     // Generate hint (without revealing the answer)
@@ -145,9 +174,9 @@ export class PracticeService {
 
       // For hints, we return a subset of the explanation
       const hintResponse = {
-        hints: hint.conceptual || 'Think about the core concept behind this question.',
-        tips: hint.examOriented || 'Focus on what the question is really asking.',
-        strategy: hint.memoryTrick || 'Eliminate obviously wrong options first.',
+        hints: toList(hint.conceptual || 'Think about the core concept behind this question.'),
+        tips: toList(hint.examOriented || 'Focus on what the question is really asking.'),
+        solvingStrategy: (hint.memoryTrick || 'Eliminate obviously wrong options first.').trim(),
       };
 
       await this.aiCacheRepo.save(questionId, cacheKey, hintResponse);

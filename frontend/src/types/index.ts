@@ -6,6 +6,13 @@ export interface User {
   role: Role;
   learningType?: 'BATCH' | 'SELF';
   createdAt?: string;
+  batchParticipants?: Array<{
+    batch: {
+      id: string;
+      batchName: string;
+      certification: { name: string };
+    };
+  }>;
 }
 
 export interface Certification {
@@ -67,7 +74,18 @@ export interface MockTestResult {
   percentage: number;
 }
 
-export interface MockTestDetail {
+export interface MockTestAttemptDetail {
+  questionId: string;
+  questionText: string;
+  options: QuestionOption;
+  correctAnswer: string;
+  userAnswer: string;
+  isCorrect: boolean;
+  timeSpentSec: number;
+  topic: string;
+}
+
+export interface MockTestResultDetail {
   id: string;
   mockName: string;
   certificationName: string;
@@ -75,7 +93,18 @@ export interface MockTestDetail {
   negativeMarks: number;
   startedAt: string;
   completedAt: string | null;
-  attempts: QuestionWithAnswer[];
+  attempts: MockTestAttemptDetail[];
+}
+
+export interface MockTestHistoryItem {
+  id: string;
+  mockName: string;
+  totalScore: number;
+  negativeMarks: number;
+  startedAt: string;
+  completedAt: string | null;
+  certification?: { name: string };
+  _count?: { attempts: number };
 }
 
 export interface ReadinessScore {
@@ -114,6 +143,7 @@ export interface MistakeLog {
     correctAnswer: string;
     topic: string;
     difficulty: string;
+    certificationId: string;
     certification: { name: string };
   };
 }
@@ -125,10 +155,13 @@ export interface AdminDashboard {
   totalMocks: number;
   currentMonthCerts?: Array<{ id: string; name: string; examDate: string | null; questionCount: number }>;
   nextMonthCerts?: Array<{ id: string; name: string; examDate: string | null; questionCount: number }>;
+  todayBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; createdAt: string }>;
+  currentMonthBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; createdAt: string }>;
 }
 
 export interface LearnerAnalytics {
   username: string;
+  learningType?: 'BATCH' | 'SELF';
   totalTimeSec: number;
   totalAttempts: number;
   mockTestCount: number;
@@ -136,6 +169,7 @@ export interface LearnerAnalytics {
   readinessStatus: string;
   topicAccuracy: TopicAccuracy[];
   weakTopics: Array<{ topic: string; count: number; totalMistakes: number }>;
+  batches?: Array<{ id: string; batchName: string; certificationName: string }>;
 }
 
 export interface Batch {

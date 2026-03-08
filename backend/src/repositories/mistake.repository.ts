@@ -24,7 +24,16 @@ export class MistakeRepository {
         where: { userId },
         include: {
           question: {
-            include: { certification: { select: { name: true } } },
+            select: {
+              id: true,
+              questionText: true,
+              options: true,
+              correctAnswer: true,
+              topic: true,
+              difficulty: true,
+              certificationId: true,
+              certification: { select: { name: true } },
+            },
           },
         },
         skip: (page - 1) * limit,

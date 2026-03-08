@@ -51,8 +51,8 @@ export function MistakeAnalysis() {
     }
   };
 
-  const handlePracticeQuestion = (questionId: string) => {
-    navigate(`/practice?questionId=${questionId}`);
+  const handlePracticeQuestion = (questionId: string, certificationId: string) => {
+    navigate(`/practice?questionId=${questionId}&certId=${certificationId}`);
   };
 
   if (loading && page === 1) return <LoadingSpinner message="Loading mistake analysis..." />;
@@ -121,8 +121,8 @@ export function MistakeAnalysis() {
                   </p>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="badge-info">{mistake.question.topic}</span>
-                    <span className="badge">{mistake.question.difficulty}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="badge bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{mistake.question.difficulty}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
                       {mistake.question.certification?.name}
                     </span>
                   </div>
@@ -134,7 +134,7 @@ export function MistakeAnalysis() {
                     }`}>
                       {mistake.mistakeCount}x
                     </div>
-                    <p className="text-xs text-gray-500">mistakes</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">mistakes</p>
                   </div>
                   {expandedId === mistake.id ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
                 </div>
@@ -186,7 +186,7 @@ export function MistakeAnalysis() {
 
                   {/* Practice button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); handlePracticeQuestion(mistake.question.id); }}
+                    onClick={(e) => { e.stopPropagation(); handlePracticeQuestion(mistake.question.id, mistake.question.certificationId); }}
                     className="btn-primary text-sm flex items-center gap-2"
                   >
                     <BookOpen className="h-4 w-4" /> Practice This Question

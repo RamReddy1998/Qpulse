@@ -174,8 +174,8 @@ export function BatchManagement() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Batch Management</h1>
-          <p className="text-gray-500 mt-1">Create and manage learner batches</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Batch Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Create and manage learner batches</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus className="h-4 w-4" /> New Batch
@@ -223,18 +223,18 @@ export function BatchManagement() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Time</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     value={newBatchStartTime}
                     onChange={(e) => setNewBatchStartTime(e.target.value)}
                     className="input-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Time</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     value={newBatchEndTime}
                     onChange={(e) => setNewBatchEndTime(e.target.value)}
                     className="input-field"
@@ -269,9 +269,9 @@ export function BatchManagement() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-gray-900">{batch.batchName}</h3>
-                    <p className="text-sm text-gray-500">{batch.certification.name}</p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <h3 className="font-medium text-gray-900 dark:text-white">{batch.batchName}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{batch.certification.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                       {batch._count?.participants || 0} participants
                     </p>
                   </div>
@@ -286,8 +286,8 @@ export function BatchManagement() {
         <div className="lg:col-span-2">
           {selectedBatch ? (
             <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">{selectedBatch.batchName}</h2>
-              <p className="text-sm text-gray-500 mb-4">{selectedBatch.certification.name}</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{selectedBatch.batchName}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{selectedBatch.certification.name}</p>
 
               {/* Add participant */}
               <div className="flex gap-2 mb-6">
@@ -307,7 +307,7 @@ export function BatchManagement() {
               </div>
 
               {/* Participants */}
-              <h3 className="text-sm font-medium text-gray-700 mb-3">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Participants ({selectedBatch.participants?.length || 0})
               </h3>
               {!selectedBatch.participants?.length ? (
@@ -315,14 +315,14 @@ export function BatchManagement() {
               ) : (
                 <div className="space-y-2">
                   {selectedBatch.participants.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 bg-primary-100 rounded-full flex items-center justify-center">
                           <span className="text-xs font-bold text-primary-700">
                             {p.user.username.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{p.user.username}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{p.user.username}</span>
                       </div>
                       <button
                         onClick={() => handleRemoveParticipant(selectedBatch.id, p.user.id)}
@@ -392,7 +392,21 @@ export function BatchManagement() {
             {/* Step 1: Select cert and upload */}
             {!uploadResult && (
               <>
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+                  <p className="font-medium mb-1">Upload Format (JSON):</p>
+                  <pre className="text-xs bg-white dark:bg-gray-800 p-2 rounded mt-1 overflow-x-auto text-gray-700 dark:text-gray-300">{`[\n  {\n    "questionText": "What is ...?",\n    "options": { "A": "...", "B": "...", "C": "...", "D": "..." },\n    "correctAnswer": "A",\n    "difficulty": "Medium",\n    "topic": "Topic Name"\n  }\n]`}</pre>
+                </div>
+
                 <div className="flex items-end gap-3 mb-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Question Set Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Azure 2024 Q3 Questions"
+                      className="input-field"
+                      disabled
+                    />
+                  </div>
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certification</label>
                     <select value={uploadCertId} onChange={(e) => setUploadCertId(e.target.value)} className="input-field">
@@ -404,8 +418,8 @@ export function BatchManagement() {
                   </div>
                   <div>
                     <label className="btn-secondary text-sm cursor-pointer flex items-center gap-2">
-                      <Upload className="h-4 w-4" /> Choose File
-                      <input type="file" accept=".json,.pdf" onChange={handleFileUpload} className="hidden" />
+                      <Upload className="h-4 w-4" /> Choose JSON File
+                      <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
                     </label>
                   </div>
                 </div>

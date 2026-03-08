@@ -36,8 +36,8 @@ export function LearnersPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Learner Management</h1>
-          <p className="text-gray-500 mt-1">{total} total learners</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Learner Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{total} total learners</p>
         </div>
       </div>
 
@@ -53,6 +53,7 @@ export function LearnersPage() {
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Username</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Learning Type</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Batch</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Joined</th>
                 <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
               </tr>
@@ -79,6 +80,23 @@ export function LearnersPage() {
                       {learner.learningType === 'BATCH' ? 'Batch Learner' : 'Self Learner'}
                     </span>
                   </td>
+                  <td className="px-6 py-4">
+                    {learner.batchParticipants && learner.batchParticipants.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {learner.batchParticipants.map((bp) => (
+                          <span
+                            key={bp.batch.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                            style={{ backgroundColor: '#ff5f2d20', color: '#ff5f2d' }}
+                          >
+                            {bp.batch.batchName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {learner.createdAt ? new Date(learner.createdAt).toLocaleDateString() : 'N/A'}
                   </td>
@@ -103,7 +121,7 @@ export function LearnersPage() {
           <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="btn-secondary text-sm">
             Previous
           </button>
-          <span className="px-4 py-2 text-sm text-gray-600">Page {page} of {Math.ceil(total / 20)}</span>
+          <span className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">Page {page} of {Math.ceil(total / 20)}</span>
           <button onClick={() => setPage(page + 1)} disabled={page >= Math.ceil(total / 20)} className="btn-secondary text-sm">
             Next
           </button>
