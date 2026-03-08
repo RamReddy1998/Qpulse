@@ -1,9 +1,14 @@
 import prisma from '../config/prisma';
 
 export class BatchRepository {
-  async create(batchName: string, certificationId: string) {
+  async create(batchName: string, certificationId: string, startTime?: Date, endTime?: Date) {
     return prisma.batch.create({
-      data: { batchName, certificationId },
+      data: {
+        batchName,
+        certificationId,
+        startTime: startTime || null,
+        endTime: endTime || null,
+      },
       include: { certification: { select: { name: true } } },
     });
   }
@@ -46,6 +51,18 @@ export class BatchRepository {
     return prisma.batchParticipant.deleteMany({
       where: { batchId, userId },
     });
+  }
+
+  async findBatchesByUser(userId: string) {
+    const participations = await prisma.batchParticipant.findMany({
+      where: { userId },
+      include: {
+        batch: {
+          include: { certification: { select: { name: true } } },
+        },
+      },
+    });
+    return participations.map((p) => p.batch);
   }
 
   async isParticipant(batchId: string, userId: string) {

@@ -33,6 +33,28 @@ export class PracticeService {
     }));
   }
 
+  async getFilteredQuestions(
+    certificationId: string,
+    filters: { topic?: string; difficulty?: string; limit?: number }
+  ) {
+    const questions = await this.questionRepo.findFiltered(certificationId, filters);
+    return questions.map((q) => ({
+      id: q.id,
+      questionText: q.questionText,
+      options: q.options,
+      difficulty: q.difficulty,
+      topic: q.topic,
+      certificationId: q.certificationId,
+    }));
+  }
+
+  async getFilterCount(
+    certificationId: string,
+    filters: { topic?: string; difficulty?: string }
+  ) {
+    return this.questionRepo.countFiltered(certificationId, filters);
+  }
+
   async submitAnswer(userId: string, questionId: string, userAnswer: string, timeSpentSec: number) {
     const question = await this.questionRepo.findById(questionId);
     if (!question) {
@@ -95,7 +117,101 @@ export class PracticeService {
     }
   }
 
+  async getHint(questionId: string) {
+    const question = await this.questionRepo.findById(questionId);
+    if (!question) {
+      throw new NotFoundError('Question not found');
+    }
+
+    const toList = (text: string): string[] => {
+      const parts = text
+        .split(/\r?\n|•|\u2022/) // split on newlines/bullets
+        .map((p) => p.replace(/^\s*[-*]\s*/, '').trim())
+        .filter(Boolean);
+
+      return parts.length > 0 ? parts : [text.trim()];
+    };
+
+    // Check cache first
+    const cacheKey = 'hint';
+    const cached = await this.aiCacheRepo.findByQuestionAndType(questionId, cacheKey);
+    if (cached) {
+      logger.debug('Returning cached AI hint', { questionId });
+
+      const resp = cached.response as unknown as Record<string, unknown>;
+      const hints = resp.hints;
+      const tips = resp.tips;
+
+      // Support legacy cached structure: { hints: string, tips: string, strategy: string }
+      const normalized = {
+        hints: Array.isArray(hints)
+          ? (hints as string[])
+          : typeof hints === 'string'
+            ? toList(hints)
+            : toList('Think about the core concept behind this question.'),
+        tips: Array.isArray(tips)
+          ? (tips as string[])
+          : typeof tips === 'string'
+            ? toList(tips)
+            : toList('Focus on what the question is really asking.'),
+        solvingStrategy: String(resp.solvingStrategy || resp.strategy || 'Eliminate obviously wrong options first.').trim(),
+      };
+
+      return normalized;
+    }
+
+    // Generate hint (without revealing the answer)
+    const aiProvider = getAiProvider();
+    const options = question.options as unknown as QuestionOption;
+
+    try {
+      const hint = await aiProvider.generateExplanation(
+        question.questionText,
+        options as unknown as Record<string, string>,
+        question.correctAnswer,
+        undefined // No user answer = hint mode
+      );
+
+      // For hints, we return a subset of the explanation
+      const hintResponse = {
+        hints: toList(hint.conceptual || 'Think about the core concept behind this question.'),
+        tips: toList(hint.examOriented || 'Focus on what the question is really asking.'),
+        solvingStrategy: (hint.memoryTrick || 'Eliminate obviously wrong options first.').trim(),
+      };
+
+      await this.aiCacheRepo.save(questionId, cacheKey, hintResponse);
+
+      return hintResponse;
+    } catch (error) {
+      logger.error('AI hint generation failed', {
+        questionId,
+        error: error instanceof Error ? error.message : 'Unknown',
+      });
+      throw error;
+    }
+  }
+
+  async getQuestionById(questionId: string) {
+    const question = await this.questionRepo.findById(questionId);
+    if (!question) {
+      throw new NotFoundError('Question not found');
+    }
+
+    return {
+      id: question.id,
+      questionText: question.questionText,
+      options: question.options,
+      difficulty: question.difficulty,
+      topic: question.topic,
+      certificationId: question.certificationId,
+    };
+  }
+
   async getTopics(certificationId: string) {
     return this.questionRepo.getTopicsByCertification(certificationId);
+  }
+
+  async getDifficulties(certificationId: string) {
+    return this.questionRepo.getDifficultiesByCertification(certificationId);
   }
 }

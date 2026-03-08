@@ -18,7 +18,14 @@ router.get('/learners/:userId/analytics', AdminController.getLearnerAnalytics);
 router.post('/batches', AdminController.createBatch);
 router.get('/batches', AdminController.getBatches);
 router.get('/batches/:batchId', AdminController.getBatchDetails);
+router.get('/batches/:batchId/analytics', AdminController.getBatchParticipantsAnalytics);
 router.post('/batches/:batchId/participants', AdminController.addParticipant);
 router.delete('/batches/:batchId/participants/:userId', AdminController.removeParticipant);
+
+// Weakness detection
+router.get('/weakness/questions', AdminController.getWeaknessQuestions);
+
+// Question upload
+router.post('/questions/:certificationId/upload', AdminController.uploadQuestions);
 
 export default router;

@@ -13,7 +13,8 @@ export class ReadinessController {
   static async calculate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const score = await readinessService.calculateReadiness(userId);
+      const certificationId = req.query.certificationId as string | undefined;
+      const score = await readinessService.calculateReadiness(userId, certificationId);
       sendSuccess(res, score, 'Readiness score calculated');
     } catch (error) {
       next(error);
@@ -23,7 +24,8 @@ export class ReadinessController {
   static async getLatest(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const score = await readinessService.getLatest(userId);
+      const certificationId = req.query.certificationId as string | undefined;
+      const score = await readinessService.getLatest(userId, certificationId);
       sendSuccess(res, score, 'Latest readiness score retrieved');
     } catch (error) {
       next(error);
@@ -33,7 +35,8 @@ export class ReadinessController {
   static async getHistory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const history = await readinessService.getHistory(userId);
+      const certificationId = req.query.certificationId as string | undefined;
+      const history = await readinessService.getHistory(userId, certificationId);
       sendSuccess(res, history, 'Readiness history retrieved');
     } catch (error) {
       next(error);
@@ -43,7 +46,8 @@ export class ReadinessController {
   static async getTopicAccuracy(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const accuracy = await activityRepo.getTopicAccuracy(userId);
+      const certificationId = req.query.certificationId as string | undefined;
+      const accuracy = await activityRepo.getTopicAccuracy(userId, certificationId);
       sendSuccess(res, accuracy, 'Topic accuracy retrieved');
     } catch (error) {
       next(error);

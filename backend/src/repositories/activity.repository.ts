@@ -25,9 +25,14 @@ export class ActivityRepository {
     return { logs, total };
   }
 
-  async getTopicAccuracy(userId: string) {
+  async getTopicAccuracy(userId: string, certificationId?: string) {
+    const where: Record<string, unknown> = { userId };
+    if (certificationId) {
+      where.question = { certificationId };
+    }
+
     const logs = await prisma.learnerActivityLog.findMany({
-      where: { userId },
+      where,
       select: { topic: true, isCorrect: true, timeSpentSec: true },
     });
 

@@ -1,29 +1,36 @@
 import prisma from '../config/prisma';
 
 export class ReadinessRepository {
-  async create(userId: string, score: number, status: string) {
+  async create(userId: string, score: number, status: string, certificationId?: string) {
     return prisma.readinessScore.create({
-      data: { userId, score, status },
+      data: { userId, score, status, certificationId: certificationId || null },
     });
   }
 
-  async getLatest(userId: string) {
+  async getLatest(userId: string, certificationId?: string) {
+    const where: Record<string, unknown> = { userId };
+    if (certificationId) where.certificationId = certificationId;
+
     return prisma.readinessScore.findFirst({
-      where: { userId },
+      where,
       orderBy: { calculatedAt: 'desc' },
+      include: { certification: { select: { name: true } } },
     });
   }
 
-  async getHistory(userId: string, limit: number = 20) {
+  async getHistory(userId: string, limit: number = 20, certificationId?: string) {
+    const where: Record<string, unknown> = { userId };
+    if (certificationId) where.certificationId = certificationId;
+
     return prisma.readinessScore.findMany({
-      where: { userId },
+      where,
       orderBy: { calculatedAt: 'desc' },
       take: limit,
+      include: { certification: { select: { name: true } } },
     });
   }
 
   async getAverageScore() {
-    // Get latest score per user
     const users = await prisma.user.findMany({
       where: { role: 'LEARNER' },
       select: { id: true },

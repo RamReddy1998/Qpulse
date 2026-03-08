@@ -4,13 +4,22 @@ export interface User {
   id: string;
   username: string;
   role: Role;
+  learningType?: 'BATCH' | 'SELF';
   createdAt?: string;
+  batchParticipants?: Array<{
+    batch: {
+      id: string;
+      batchName: string;
+      certification: { name: string };
+    };
+  }>;
 }
 
 export interface Certification {
   id: string;
   name: string;
   description: string;
+  examDate?: string | null;
   _count: { questions: number };
 }
 
@@ -65,7 +74,18 @@ export interface MockTestResult {
   percentage: number;
 }
 
-export interface MockTestDetail {
+export interface MockTestAttemptDetail {
+  questionId: string;
+  questionText: string;
+  options: QuestionOption;
+  correctAnswer: string;
+  userAnswer: string;
+  isCorrect: boolean;
+  timeSpentSec: number;
+  topic: string;
+}
+
+export interface MockTestResultDetail {
   id: string;
   mockName: string;
   certificationName: string;
@@ -73,7 +93,18 @@ export interface MockTestDetail {
   negativeMarks: number;
   startedAt: string;
   completedAt: string | null;
-  attempts: QuestionWithAnswer[];
+  attempts: MockTestAttemptDetail[];
+}
+
+export interface MockTestHistoryItem {
+  id: string;
+  mockName: string;
+  totalScore: number;
+  negativeMarks: number;
+  startedAt: string;
+  completedAt: string | null;
+  certification?: { name: string };
+  _count?: { attempts: number };
 }
 
 export interface ReadinessScore {
@@ -90,6 +121,7 @@ export interface ReadinessHistory {
   score: number;
   status: string;
   calculatedAt: string;
+  certification?: { name: string } | null;
 }
 
 export interface TopicAccuracy {
@@ -105,9 +137,13 @@ export interface MistakeLog {
   mistakeCount: number;
   lastAttemptedAt: string;
   question: {
+    id: string;
     questionText: string;
+    options: QuestionOption;
+    correctAnswer: string;
     topic: string;
     difficulty: string;
+    certificationId: string;
     certification: { name: string };
   };
 }
@@ -117,10 +153,15 @@ export interface AdminDashboard {
   activeLearners: number;
   avgReadiness: number;
   totalMocks: number;
+  currentMonthCerts?: Array<{ id: string; name: string; examDate: string | null; questionCount: number }>;
+  nextMonthCerts?: Array<{ id: string; name: string; examDate: string | null; questionCount: number }>;
+  todayBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; createdAt: string }>;
+  currentMonthBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; createdAt: string }>;
 }
 
 export interface LearnerAnalytics {
   username: string;
+  learningType?: 'BATCH' | 'SELF';
   totalTimeSec: number;
   totalAttempts: number;
   mockTestCount: number;
@@ -128,16 +169,41 @@ export interface LearnerAnalytics {
   readinessStatus: string;
   topicAccuracy: TopicAccuracy[];
   weakTopics: Array<{ topic: string; count: number; totalMistakes: number }>;
+  batches?: Array<{ id: string; batchName: string; certificationName: string }>;
 }
 
 export interface Batch {
   id: string;
   batchName: string;
   certificationId: string;
+  startTime?: string | null;
+  endTime?: string | null;
   createdAt: string;
   certification: { name: string };
   _count?: { participants: number };
   participants?: Array<{ id: string; user: { id: string; username: string } }>;
+}
+
+export interface AiHint {
+  hints: string[];
+  tips: string[];
+  solvingStrategy: string;
+}
+
+export interface BatchParticipantAnalytics {
+  id: string;
+  userId: string;
+  username: string;
+  certification: string;
+  scoreRange: string;
+  activityStatus: 'Active' | 'Inactive';
+}
+
+export interface UploadResult {
+  total: number;
+  successful: number;
+  failed: number;
+  failures: Array<{ index: number; reason: string }>;
 }
 
 export interface ApiResponse<T> {

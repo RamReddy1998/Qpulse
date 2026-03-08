@@ -20,7 +20,7 @@ export class MockTestService {
     this.mistakeRepo = new MistakeRepository();
   }
 
-  async startMockTest(userId: string, certificationId: string, questionCount: number) {
+  async startMockTest(userId: string, certificationId: string, questionCount: number, mockName?: string) {
     // Get random questions from dump
     const questions = await this.questionRepo.findRandomByCertification(certificationId, questionCount);
 
@@ -28,15 +28,15 @@ export class MockTestService {
       throw new NotFoundError('No questions found for this certification');
     }
 
-    const mockName = `Mock Test - ${new Date().toISOString().split('T')[0]} - ${Date.now().toString(36)}`;
+    const name = mockName || `Mock Test - ${new Date().toISOString().split('T')[0]} - ${Date.now().toString(36)}`;
 
-    const mockTest = await this.mockTestRepo.create(userId, mockName, certificationId);
+    const mockTest = await this.mockTestRepo.create(userId, name, certificationId);
 
     logger.info('Mock test started', { mockTestId: mockTest.id, userId, questionCount: questions.length });
 
     return {
       mockTestId: mockTest.id,
-      mockName,
+      mockName: name,
       questions: questions.map((q) => ({
         id: q.id,
         questionText: q.questionText,

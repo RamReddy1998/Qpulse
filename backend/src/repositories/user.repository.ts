@@ -20,7 +20,20 @@ export class UserRepository {
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where: { role: 'LEARNER' },
-        select: { id: true, username: true, role: true, createdAt: true },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          learningType: true,
+          createdAt: true,
+          batchParticipants: {
+            include: {
+              batch: {
+                select: { id: true, batchName: true, certification: { select: { name: true } } },
+              },
+            },
+          },
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -28,6 +41,13 @@ export class UserRepository {
       prisma.user.count({ where: { role: 'LEARNER' } }),
     ]);
     return { users, total };
+  }
+
+  async updateLearningType(userId: string, learningType: 'BATCH' | 'SELF') {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { learningType },
+    });
   }
 
   async countByRole(role: Role) {

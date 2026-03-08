@@ -10,6 +10,13 @@ export class CertificationRepository {
     });
   }
 
+  async updateExamDate(id: string, examDate: Date | null) {
+    return prisma.certification.update({
+      where: { id },
+      data: { examDate },
+    });
+  }
+
   async findById(id: string) {
     return prisma.certification.findUnique({
       where: { id },

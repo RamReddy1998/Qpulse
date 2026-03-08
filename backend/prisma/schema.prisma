@@ -12,13 +12,19 @@ enum Role {
   ADMIN
 }
 
+enum LearningType {
+  BATCH
+  SELF
+}
+
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role     @default(LEARNER)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           String       @id @default(uuid())
+  username     String       @unique
+  passwordHash String       @map("password_hash")
+  role         Role         @default(LEARNER)
+  learningType LearningType @default(SELF) @map("learning_type")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
 
   sessions           Session[]
   mockTests          MockTest[]
@@ -44,15 +50,17 @@ model Session {
 }
 
 model Certification {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String   @default("")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String    @default("")
+  examDate    DateTime? @map("exam_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  questions Question[]
-  mockTests MockTest[]
-  batches   Batch[]
+  questions       Question[]
+  mockTests       MockTest[]
+  batches         Batch[]
+  readinessScores ReadinessScore[]
 
   @@map("certifications")
 }
@@ -65,6 +73,7 @@ model Question {
   correctAnswer   String   @map("correct_answer")
   difficulty      String   @default("medium")
   topic           String   @default("")
+  source          String   @default("seed")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -75,6 +84,7 @@ model Question {
 
   @@index([certificationId])
   @@index([topic])
+  @@index([difficulty])
   @@map("questions")
 }
 
@@ -128,23 +138,28 @@ model MistakeLog {
 }
 
 model ReadinessScore {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  score        Float    @default(0)
-  status       String   @default("not_ready")
-  calculatedAt DateTime @default(now()) @map("calculated_at")
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  certificationId String?  @map("certification_id")
+  score           Float    @default(0)
+  status          String   @default("not_ready")
+  calculatedAt    DateTime @default(now()) @map("calculated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([certificationId])
   @@map("readiness_scores")
 }
 
 model Batch {
-  id              String   @id @default(uuid())
-  batchName       String   @map("batch_name")
-  certificationId String   @map("certification_id")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id              String    @id @default(uuid())
+  batchName       String    @map("batch_name")
+  certificationId String    @map("certification_id")
+  startTime       DateTime? @map("start_time")
+  endTime         DateTime? @map("end_time")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   certification Certification      @relation(fields: [certificationId], references: [id], onDelete: Cascade)
   participants  BatchParticipant[]

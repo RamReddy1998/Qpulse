@@ -1,11 +1,12 @@
 import api from './api';
-import { ApiResponse, PaginatedResponse, MockTestStart, MockTestResult, MockTestDetail } from '../types';
+import { ApiResponse, PaginatedResponse, MockTestStart, MockTestResult, MockTestResultDetail, MockTestHistoryItem } from '../types';
 
 export const mockTestService = {
-  async start(certificationId: string, questionCount = 30): Promise<MockTestStart> {
+  async start(certificationId: string, questionCount = 30, mockName?: string): Promise<MockTestStart> {
     const res = await api.post<ApiResponse<MockTestStart>>('/mock-tests/start', {
       certificationId,
       questionCount,
+      mockName,
     });
     return res.data.data;
   },
@@ -20,13 +21,13 @@ export const mockTestService = {
     return res.data.data;
   },
 
-  async getResult(mockTestId: string): Promise<MockTestDetail> {
-    const res = await api.get<ApiResponse<MockTestDetail>>(`/mock-tests/${mockTestId}/result`);
+  async getResult(mockTestId: string): Promise<MockTestResultDetail> {
+    const res = await api.get<ApiResponse<MockTestResultDetail>>(`/mock-tests/${mockTestId}/result`);
     return res.data.data;
   },
 
   async getHistory(page = 1, limit = 20) {
-    const res = await api.get<PaginatedResponse<MockTestDetail>>(`/mock-tests/history?page=${page}&limit=${limit}`);
+    const res = await api.get<PaginatedResponse<MockTestHistoryItem>>(`/mock-tests/history?page=${page}&limit=${limit}`);
     return res.data;
   },
 };
