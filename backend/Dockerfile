@@ -2,18 +2,21 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install deps
 COPY package*.json ./
 RUN npm ci
 
-# Install required system deps for Prisma
+# Install OpenSSL (required by Prisma)
 RUN apk add --no-cache openssl
 
-# Copy source
-COPY . .
+# Copy prisma first (important for caching + correctness)
+COPY prisma ./prisma
 
-# Generate Prisma client BEFORE build
+# Generate Prisma client FIRST
 RUN npx prisma generate
+
+# Copy rest of code
+COPY . .
 
 # Build app
 RUN npm run build
@@ -25,19 +28,19 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install runtime deps
+# Install deps
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Install OpenSSL again (needed at runtime too)
+# Install OpenSSL
 RUN apk add --no-cache openssl
 
-# Copy built app + prisma
+# Copy built output + prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Generate Prisma client (safe redundancy)
+# Generate again (safe + ensures runtime compatibility)
 RUN npx prisma generate
 
 EXPOSE 4000
