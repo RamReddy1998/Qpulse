@@ -25,32 +25,31 @@ steps:
     secretEnv: ['MIGRATE_DB_URL']
 
   # ── Step 2: Build backend image ──────────────────────────────────────────
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - build
-      - -t
-      - ${_REPO}/${_BACKEND_SERVICE}:$SHORT_SHA
-      - -t
-      - ${_REPO}/${_BACKEND_SERVICE}:latest
-      - ./backend
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'build'
+    - '-t'
+    - 'us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo/qpulse-backend:$SHORT_SHA'
+    - '-t'
+    - 'us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo/qpulse-backend:latest'
+    - './backend'
 
   # ── Step 3: Build frontend image ─────────────────────────────────────────
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - build
-      - -t
-      - ${_REPO}/${_FRONTEND_SERVICE}:$SHORT_SHA
-      - -t
-      - ${_REPO}/${_FRONTEND_SERVICE}:latest
-      - ./frontend
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'build'
+    - '-t'
+    - 'us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo/qpulse-frontend:$SHORT_SHA'
+    - '-t'
+    - 'us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo/qpulse-frontend:latest'
+    - './frontend'
 
-  # ── Step 4: Push backend image ───────────────────────────────────────────
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '--all-tags', '${_REPO}/${_BACKEND_SERVICE}']
+    
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo/qpulse-backend']
 
-  # ── Step 5: Push frontend image ──────────────────────────────────────────
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '--all-tags', '${_REPO}/${_FRONTEND_SERVICE}']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo/qpulse-frontend']
 
   # ── Step 6: Deploy backend (no traffic yet) ──────────────────────────────
   - name: 'gcr.io/cloud-builders/gcloud'
