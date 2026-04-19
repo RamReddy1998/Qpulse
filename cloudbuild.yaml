@@ -87,6 +87,7 @@ steps:
       - '--image=${_REPO}/${_FRONTEND_SERVICE}:$SHORT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
+      - '--service-account=qpulse-backend-sa@qpulse-prod-8666.iam.gserviceaccount.com'
       - '--allow-unauthenticated'
       - '--port=8080'
       - '--memory=256Mi'
