@@ -1,0 +1,118 @@
+substitutions:
+  _REGION: us-central1
+  _REPO: us-central1-docker.pkg.dev/qpulse-prod-8666/qpulse-repo
+  _BACKEND_SERVICE: qpulse-backend
+  _FRONTEND_SERVICE: qpulse-frontend
+  _SQL_INSTANCE: qpulse-prod-8666:us-central1:qpulse-db
+
+steps:
+
+  # ── Step 1: Run Prisma migrations ────────────────────────────────────────
+  - name: 'node:18-alpine'
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        apk add --no-cache wget
+        wget -q https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.11.0/cloud-sql-proxy.linux.amd64 -O /usr/local/bin/cloud-sql-proxy
+        chmod +x /usr/local/bin/cloud-sql-proxy
+        cloud-sql-proxy ${_SQL_INSTANCE} --port=5432 &
+        sleep 5
+        cd backend
+        npm ci
+        DATABASE_URL="$$MIGRATE_DB_URL" npx prisma migrate deploy
+        echo "Migrations done"
+    secretEnv: ['MIGRATE_DB_URL']
+
+  # ── Step 2: Build backend image ──────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - ${_REPO}/${_BACKEND_SERVICE}:$SHORT_SHA
+      - -t
+      - ${_REPO}/${_BACKEND_SERVICE}:latest
+      - ./backend
+
+  # ── Step 3: Build frontend image ─────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - ${_REPO}/${_FRONTEND_SERVICE}:$SHORT_SHA
+      - -t
+      - ${_REPO}/${_FRONTEND_SERVICE}:latest
+      - ./frontend
+
+  # ── Step 4: Push backend image ───────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REPO}/${_BACKEND_SERVICE}']
+
+  # ── Step 5: Push frontend image ──────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REPO}/${_FRONTEND_SERVICE}']
+
+  # ── Step 6: Deploy backend (no traffic yet) ──────────────────────────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - run
+      - deploy
+      - ${_BACKEND_SERVICE}
+      - --image=${_REPO}/${_BACKEND_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --service-account=qpulse-backend-sa@qpulse-prod-8666.iam.gserviceaccount.com
+      - --add-cloudsql-instances=${_SQL_INSTANCE}
+      - --set-secrets=DATABASE_URL=DATABASE_URL:latest,JWT_ACCESS_SECRET=JWT_ACCESS_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,GOOGLE_API_KEY=GOOGLE_API_KEY:latest,JWT_ACCESS_EXPIRY=JWT_ACCESS_EXPIRY:latest,JWT_REFRESH_EXPIRY=JWT_REFRESH_EXPIRY:latest,AI_PROVIDER=AI_PROVIDER:latest,GOOGLE_AI_MODEL=GOOGLE_AI_MODEL:latest,LOGIN_RATE_LIMIT_WINDOW_MS=LOGIN_RATE_LIMIT_WINDOW_MS:latest,LOGIN_RATE_LIMIT_MAX=LOGIN_RATE_LIMIT_MAX:latest,PORT=PORT:latest
+      - --set-env-vars=NODE_ENV=production
+      - --allow-unauthenticated
+      - --port=4000
+      - --memory=512Mi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=3
+      - --no-traffic
+
+  # ── Step 7: Deploy frontend (no traffic yet) ─────────────────────────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - run
+      - deploy
+      - ${_FRONTEND_SERVICE}
+      - --image=${_REPO}/${_FRONTEND_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --memory=256Mi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=3
+      - --no-traffic
+
+  # ── Step 8: Shift traffic to new revisions ───────────────────────────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - run
+      - services
+      - update-traffic
+      - ${_BACKEND_SERVICE}
+      - --to-latest
+      - --region=${_REGION}
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - run
+      - services
+      - update-traffic
+      - ${_FRONTEND_SERVICE}
+      - --to-latest
+      - --region=${_REGION}
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/qpulse-prod-8666/secrets/DATABASE_URL/versions/latest
+      env: MIGRATE_DB_URL
+
+options:
+  logging: CLOUD_LOGGING_ONLY
